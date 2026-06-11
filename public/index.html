@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0 16px;
+      background: #3c9f7f;
+      color: #e5e5e5;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-weight: 300;
+    }
+    h1 {
+      margin-left: 25%;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 52px;
+      height: 28px;
+      margin-right: 8px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #555;
+      transition: 0.3s;
+      border-radius: 34px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 22px;
+      width: 22px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+    .switch input:checked + .slider {
+      background-color: #4f46e5; /* ← テーマカラー */
+    }
+    .switch input:checked + .slider:before {
+      transform: translateX(24px);
+    }
+    #card-container {
+      min-height: 400px; /* 好きな高さに調整 */
+      padding: 20px;
+      overflow-y: auto; /* ← スクロール可能にする */
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      padding: 20px;
+    }
+    @media (max-width: 480px) {
+      .grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      #card-container {
+        max-height: calc(4 * 164px);
+        overflow-y: auto;
+      }
+    }
+    .card {
+      min-height: 140px;
+      background: #4aa88a;
+      border-radius: 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between; /* ← 上：タイトル、下：進捗円 */
+      padding-bottom: 12px;
+      transition: transform 0.1s ease;
+    }
+    .card:hover {
+      transform: scale(1.02);
+    }
+    .card-header {
+      padding-right: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+    .card-header span {
+      padding-left: 8px;
+      padding-right: 8px; /* ← 削除ボタンとの間に余白 */
+      word-break: break-word; /* ← 長いタイトルでも折り返す */
+      font-size: 18px;   /* ← 今より2段階大きい */
+      font-weight: 600;  /* ← 太さで視認性UP */
+      line-height: 1.3;
+    }
+    .progress-wrapper {
+      display: flex;
+      justify-content: center; /* ← 横方向の中央寄せ */
+      align-items: flex-end; /* ← 下寄り */
+      margin-top: auto;      /* ← カード下側に押し下げる */
+      width: 100%;
+      margin-top: 8px;
+    }
+    #progress-container {
+      margin-left: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .progress-circle {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 20px;
+      font-weight: bold;
+      color: #fff;
+      background:
+        radial-gradient(closest-side, #0f0f0f 79%, transparent 80% 100%),
+        conic-gradient(
+          #00eaff calc(var(--p) * 1%),
+          #0066ff 0
+        );
+      transition: all 0.3s ease;
+    }
+    .delete-card {
+      margin-left: auto; /* ← 右端に寄せる */
+      background: #ff4d4d;
+      border: none;
+      color: white;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      cursor: pointer;
+      flex-shrink: 0; /* ← タイトルが長くても潰れない */
+    }
+    .task-edit-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      padding: 10px;
+      border-radius: 10px;
+      margin-bottom: 8px;
+    }
+    .task-edit-row input {
+      flex: 1;
+      padding: 10px;
+      background: #0f0f0f;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 15px;
+    }
+    .task-edit-row.selected {
+      background: #dbeafe;
+      border-radius: 6px;
+    }
+    .select-task,
+    .delete-task {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      padding: 0;          /* ← これが超重要 */
+      line-height: 0;      /* ← これも超重要 */
+    }
+    .select-task {
+      background: #4f46e5;
+      color: #fff;
+    }
+    .delete-task {
+      background: #e53935;
+      color: #fff;
+    }
+    .select-task svg,
+    .delete-task svg {
+      width: 20px;         /* ← 親に依存しない固定サイズ */
+      height: 20px;
+      flex-shrink: 0;      /* ← 潰れ防止 */
+      pointer-events: none;
+    }
+    /* 背景の暗幕 */
+    .popup {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.55);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
+    .popup-content {
+      background: #1a1a1a;
+      padding: 24px;
+      border-radius: 16px;
+      width: 85%;
+      max-width: 360px;
+      color: #fff;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      animation: popupFade 0.2s ease-out;
+    }
+    .popup-content h2 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-size: 20px;
+      font-weight: 600;
+    }
+    .popup-content p {
+      margin-bottom: 20px;
+      font-size: 16px;
+    }
+    .popup-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .popup-buttons button {
+      flex: 1;
+      border-radius: 10px;
+    }
+    #complete-task {
+      background: #4f46e5;
+      color: #fff;
+    }
+    #close-popup {
+      background: #333;
+      color: #fff;
+    }
+    @keyframes popupIn {
+      from { transform: scale(0.9); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+    @keyframes popupFade {
+      from { transform: scale(0.9); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+    .app-footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 60px;
+      background: #1a1a1a; /* 目に優しいダークグレー */
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      border-top: 1px solid #333;
+      z-index: 999;
+    }
+    .footer-btn {
+      flex: 1;
+      height: 100%;
+      border: none;
+      background: none;
+      color: #e5e5e5;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .footer-btn:active {
+      background: #2a2a2a;
+    }
+    .edit-container {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .edit-block {
+      background: #1a1a1a;
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid #2a2a2a;
+    }
+    .edit-label {
+      font-size: 14px;
+      color: #cfcfcf;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .edit-input {
+      width: 90%;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #333;
+      background: #0f0f0f;
+      color: #fff;
+      font-size: 16px;
+    }
+    .add-btn {
+      margin-top: 12px;
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      background: #4f46e5;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .milestone-item {
+      background: #0f0f0f;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #333;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .save-btn {
+      padding: 14px;
+      border-radius: 10px;
+      border: none;
+      background: #4f46e5;
+      color: #fff;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .check-popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 2000;
+      animation: fadeOut 0.8s ease forwards;
+    }
+    .check-circle {
+      width: 80px;
+      height: 80px;
+      background: #4f46e5;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      animation: popIn 0.3s ease-out;
+    }
+    .check-mark {
+      width: 28px;
+      height: 14px;
+      border-left: 4px solid white;
+      border-bottom: 4px solid white;
+      transform: rotate(-45deg);
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.3); opacity: 0; }
+      80% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(1); }
+    }
+    @keyframes fadeOut {
+      0% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+  </style>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- PWA manifest -->
+  <link rel="manifest" href="manifest.json" />
+
+  <!-- iOS用（ホーム画面アイコン） -->
+  <link rel="apple-touch-icon" href="icon.png" />
+
+  <title>FocusChain</title>
+</head>
+<body>
+  <h1>FocusChain</h1>
+  
+  <div id="progress-container">
+    <label class="switch">
+      <input type="checkbox" id="toggle-edit">
+      <span class="slider"></span>
+    </label>
+    編集モード
+  </div>
+
+  <div id="card-container"></div>
+
+  <form id="card-form" class="edit-container" style="display:none">
+
+    <!-- 目的（カードタイトル） -->
+    <div class="edit-block">
+      <label class="edit-label">目的</label>
+      <input id="title" class="edit-input" type="text" placeholder="例：英語を話せるようになる">
+    </div>
+
+    <!-- 目標リスト（子タスク） -->
+    <div class="edit-block">
+      <label class="edit-label">目標（目的を達成するために必要なこと）</label>
+      <div id="task-edit-list" class="milestone-list"></div>
+      <button id="add-task" type="button" class="add-btn">＋ 目標を追加</button>
+    </div>
+
+    <!-- 保存ボタン -->
+    <button type="submit" class="save-btn">保存</button>
+
+  </form>
+
+  <footer class="app-footer">
+    <button id="view-progress" class="footer-btn">進捗確認</button>
+    <button id="view-edit" class="footer-btn">カード編集</button>
+  </footer>
+
+  <script>
+    // Service Worker 登録
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("service-worker.js");
+    }
+  </script>
+  
+  <!-- 外部JS（カード描画用） -->
+  <script src="js/cards.js"></script>
+  <script src="js/register.js"></script>
+  <script src="js/edit.js"></script>
+  <script src="js/menu.js"></script>
+</body>
+</html>

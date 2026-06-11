@@ -1,0 +1,41 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- 背景（塗りつぶし） -->
+  <rect width="512" height="512" rx="100" fill="#1a1a1a"/>
+
+  <!-- ベースリング（グレー） -->
+  <circle
+    cx="256"
+    cy="256"
+    r="220"
+    stroke="#333"
+    stroke-width="40"
+    fill="none"
+  />
+
+  <!-- 進捗リング（80%） -->
+  <!-- 円周 ≒ 2 * π * 220 ≒ 1382 -->
+  <!-- 80% → 1106 / 残り → 276 -->
+  <circle
+    cx="256"
+    cy="256"
+    r="220"
+    stroke="#4f46e5"
+    stroke-width="40"
+    fill="none"
+    stroke-linecap="round"
+    stroke-dasharray="1106 1382"
+    transform="rotate(-90 256 256)"
+  />
+
+  <!-- チェックマーク -->
+  <path
+    d="M170 260 L230 320 L350 200"
+    stroke="#4f46e5"
+    stroke-width="40"
+    fill="none"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+</svg>
